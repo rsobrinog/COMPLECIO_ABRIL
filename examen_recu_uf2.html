@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Examen Recuperació UF2 — FastAPI + PostgreSQL</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222639;
+      --border: #2e3248;
+      --accent: #6c7fff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #12141e;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1e2240 0%, #2a1f4a 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 2.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(108,127,255,.18) 0%, transparent 70%);
+    }
+    .header-meta {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: .2rem .75rem;
+      font-size: .78rem;
+      color: var(--text-muted);
+      letter-spacing: .04em;
+    }
+    .badge span { color: var(--accent); font-weight: 600; }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      background: linear-gradient(90deg, #a5b4fc, #c4b5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: .4rem;
+    }
+    .subtitle { color: var(--text-muted); font-size: .9rem; }
+
+    /* ── Info boxes ── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .info-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+    }
+    .info-card h3 {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--accent);
+      margin-bottom: .6rem;
+    }
+    .info-card ul {
+      padding-left: 1rem;
+      font-size: .88rem;
+      color: var(--text-muted);
+    }
+    .info-card ul li { margin-bottom: .3rem; }
+    .info-card p { font-size: .88rem; color: var(--text-muted); }
+
+    /* ── Warning / Note boxes ── */
+    .alert {
+      display: flex;
+      gap: .75rem;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      font-size: .875rem;
+    }
+    .alert-warning { background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.35); }
+    .alert-info    { background: rgba(108,127,255,.08); border: 1px solid rgba(108,127,255,.35); }
+    .alert-danger  { background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.35); }
+    .alert-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .1rem; }
+    .alert strong { color: var(--yellow); }
+    .alert-info strong { color: var(--accent); }
+    .alert-danger strong { color: var(--red); }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--text-muted);
+      margin: 2rem 0 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Exercise cards ── */
+    .exercise {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .exercise-header {
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .exercise-header-left { display: flex; align-items: center; gap: 1rem; }
+    .ex-number {
+      width: 2.2rem; height: 2.2rem;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .95rem;
+      flex-shrink: 0;
+    }
+    .ex-1 { background: rgba(108,127,255,.2); color: #a5b4fc; border: 1px solid rgba(108,127,255,.4); }
+    .ex-2 { background: rgba(52,211,153,.2); color: #6ee7b7; border: 1px solid rgba(52,211,153,.4); }
+    .ex-3 { background: rgba(251,191,36,.2); color: #fde68a; border: 1px solid rgba(251,191,36,.4); }
+    .ex-4 { background: rgba(167,139,250,.2); color: #c4b5fd; border: 1px solid rgba(167,139,250,.4); }
+    .ex-5 { background: rgba(248,113,113,.2); color: #fca5a5; border: 1px solid rgba(248,113,113,.4); }
+    .ex-6 { background: rgba(251,146,60,.2); color: #fed7aa; border: 1px solid rgba(251,146,60,.4); }
+    .ex-title { font-weight: 600; font-size: 1rem; }
+    .ex-subtitle { font-size: .8rem; color: var(--text-muted); margin-top: .1rem; }
+    .weight-badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: .25rem .9rem;
+      font-size: .8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .w-10 { color: #a5b4fc; }
+    .w-20 { color: #6ee7b7; }
+    .w-15 { color: #c4b5fd; }
+
+    .exercise-body {
+      padding: 1.5rem;
+    }
+
+    /* ── Task description ── */
+    .task-desc {
+      font-size: .92rem;
+      margin-bottom: 1.2rem;
+      color: var(--text);
+    }
+    .task-desc strong { color: var(--yellow); }
+
+    /* ── Checklist (rubric criteria visible) ── */
+    .checklist {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-top: .75rem;
+      margin-bottom: 1rem;
+    }
+    .checklist-title {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--text-muted);
+      margin-bottom: .75rem;
+    }
+    .check-group { margin-bottom: .6rem; }
+    .check-group-label {
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent2);
+      margin-bottom: .3rem;
+    }
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: .6rem;
+      font-size: .84rem;
+      color: var(--text-muted);
+      padding: .2rem 0;
+    }
+    .check-item::before {
+      content: '□';
+      color: var(--border);
+      flex-shrink: 0;
+      margin-top: .05rem;
+    }
+
+    /* ── Code block ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      font-size: .82rem;
+      line-height: 1.6;
+      font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+      margin: .75rem 0;
+    }
+    code {
+      font-family: inherit;
+      color: #93c5fd;
+    }
+    pre code { color: var(--text); }
+    .kw { color: #c4b5fd; }
+    .fn { color: #93c5fd; }
+    .st { color: #86efac; }
+    .cm { color: #4b5563; font-style: italic; }
+    .num { color: #fde68a; }
+
+    /* ── Table ── */
+    .db-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .84rem;
+      margin: .75rem 0;
+    }
+    .db-table th {
+      background: var(--surface2);
+      color: var(--accent);
+      text-align: left;
+      padding: .5rem .9rem;
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      border-bottom: 1px solid var(--border);
+    }
+    .db-table td {
+      padding: .5rem .9rem;
+      border-bottom: 1px solid rgba(46,50,72,.6);
+      color: var(--text-muted);
+    }
+    .db-table tr:last-child td { border-bottom: none; }
+    .db-table td:first-child { color: var(--text); font-weight: 600; }
+    .tag {
+      display: inline-block;
+      padding: .1rem .45rem;
+      border-radius: 4px;
+      font-size: .72rem;
+      font-weight: 600;
+      margin-right: .3rem;
+    }
+    .tag-pk  { background: rgba(251,191,36,.15); color: #fde68a; border: 1px solid rgba(251,191,36,.3); }
+    .tag-hide { background: rgba(248,113,113,.15); color: #fca5a5; border: 1px solid rgba(248,113,113,.3); }
+    .tag-upd { background: rgba(52,211,153,.15); color: #6ee7b7; border: 1px solid rgba(52,211,153,.3); }
+
+    /* ── Commit banner ── */
+    .commit-banner {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      background: rgba(108,127,255,.07);
+      border: 1px dashed rgba(108,127,255,.4);
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      margin-top: 1.25rem;
+      font-size: .84rem;
+      color: #a5b4fc;
+    }
+    .commit-banner code {
+      background: rgba(108,127,255,.12);
+      padding: .1rem .4rem;
+      border-radius: 4px;
+      font-size: .8rem;
+    }
+
+    /* ── Docker section ── */
+    .docker-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 640px) {
+      .docker-grid { grid-template-columns: 1fr; }
+      header { padding: 1.5rem; }
+      h1 { font-size: 1.4rem; }
+    }
+
+    /* ── Score overview ── */
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: .75rem;
+      margin-bottom: 2rem;
+    }
+    .score-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+    }
+    .score-item .pct {
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: block;
+      margin-bottom: .2rem;
+    }
+    .score-item .label { font-size: .75rem; color: var(--text-muted); }
+    .s1 .pct { color: #a5b4fc; }
+    .s2 .pct { color: #6ee7b7; }
+    .s3 .pct { color: #fde68a; }
+    .s4 .pct { color: #c4b5fd; }
+    .s5 .pct { color: #fca5a5; }
+    .s6 .pct { color: #fed7aa; }
+    .s7 .pct { color: #67e8f9; }
+    .s8 .pct { color: #d1fae5; }
+
+    .form-preview {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: .75rem 0;
+    }
+    .form-preview h4 { font-size: .8rem; color: var(--text-muted); margin-bottom: .8rem; text-transform: uppercase; letter-spacing: .08em; }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+      margin-bottom: .75rem;
+    }
+    .form-field label { font-size: .78rem; color: var(--accent2); font-weight: 600; }
+    .form-field .field-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .4rem .75rem;
+      font-size: .82rem;
+      color: var(--text-muted);
+    }
+    .form-field .field-type {
+      font-size: .72rem;
+      color: #4b5563;
+    }
+
+    @media print {
+      @page {
+        size: A4;
+        margin: 14mm 12mm 14mm 12mm;
+      }
+      body {
+        padding: 0;
+        background: #0f1117 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .page { max-width: 100%; }
+      .exercise        { break-inside: avoid; page-break-inside: avoid; }
+      .checklist       { break-inside: avoid; page-break-inside: avoid; }
+      .alert           { break-inside: avoid; page-break-inside: avoid; }
+      .commit-banner   { break-inside: avoid; page-break-inside: avoid; }
+      .score-grid      { break-inside: avoid; page-break-inside: avoid; }
+      .docker-grid     { break-inside: avoid; page-break-inside: avoid; }
+      .info-grid       { break-inside: avoid; page-break-inside: avoid; }
+      .section-title   { break-after: avoid;  page-break-after: avoid;  }
+      .exercise-header { break-after: avoid;  page-break-after: avoid;  }
+      h1, h2, h3       { break-after: avoid;  page-break-after: avoid;  }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="header-meta">
+      <div class="badge">Mòdul <span>M07</span></div>
+      <div class="badge">UF <span>2</span></div>
+      <div class="badge">Grup <span>COMPLECIÓ DAW2A</span></div>
+      <div class="badge">Data <span>25/11/2025</span></div>
+    </div>
+    <h1>Examen de Recuperació UF2</h1>
+    <p class="subtitle">FastAPI + PostgreSQL — CRUD de perfil de client</p>
+  </header>
+
+  <!-- ── Alerts ── -->
+  <div class="alert alert-danger">
+    <div class="alert-icon">🚫</div>
+    <div><strong>No s'utilitza BaseModel</strong> — En aquest examen <em>no</em> s'ha de fer servir Pydantic BaseModel per a la validació de dades. La serialització es farà mitjançant un schema manual (Exercici 4).</div>
+  </div>
+
+  <div class="alert alert-warning">
+    <div class="alert-icon">⚠️</div>
+    <div><strong>Estructura progressiva</strong> — <em>No</em> creïs l'estructura sencera del projecte d'entrada. Crea cada carpeta i fitxer quan arribes a l'exercici que ho demana. Cada exercici ha de tenir el seu commit abans de passar al següent.</div>
+  </div>
+
+  <div class="alert alert-info">
+    <div class="alert-icon">📋</div>
+    <div><strong>Entrega:</strong> Repositori privat de nom <code>Comp_UF2_NomAlumnx</code> (substitueix <code>NomAlumnx</code> pel teu nom). Afegeix el professor com a col·laborador: <code>rsobrinog</code>. Penja l'enllaç al Moodle.</div>
+  </div>
+
+  <!-- ── Setup: Docker ── -->
+  <div class="section-title">Configuració prèvia — Docker</div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>Passos inicials</h3>
+      <ul>
+        <li>Crea el repositori a GitHub (privat) amb README.md</li>
+        <li>Clona'l i crea el fitxer <code>docker-compose.yml</code> en una carpeta</li>
+        <li>Engega els serveis amb <code>docker compose up -d</code></li>
+        <li>Comprova que la BD és accessible via pgAdmin</li>
+        <li>Crea la taula <code>clients</code> a la BD <strong>comp_DB</strong></li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3>Comandes Docker útils</h3>
+      <ul>
+        <li><code>sudo docker compose up -d</code> — engegar serveis</li>
+        <li><code>sudo docker ps</code> — veure contenidors actius</li>
+        <li><code>sudo docker stop &lt;nom&gt;</code> — parar contenidor</li>
+        <li><code>sudo docker rm &lt;nom&gt;</code> — eliminar contenidor</li>
+        <li><code>sudo lsof -i:5432</code> — alliberar port si cal</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="docker-grid">
+    <div>
+      <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.08em;">docker-compose.yml</p>
+      <pre><code><span class="kw">version</span>: <span class="st">'3.1'</span>
+<span class="kw">services</span>:
+  <span class="kw">db</span>:
+    image: postgres:13
+    container_name: db_complecio
+    environment:
+      - POSTGRES_DB=comp_DB
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_USER=admin
+    ports:
+      - <span class="st">"5432:5432"</span>
+    volumes:
+      - local_pgdata:/var/lib/postgresql/data
+  <span class="kw">pgadmin</span>:
+    image: dpage/pgadmin4
+    container_name: pg_complecio
+    ports:
+      - <span class="st">"80:80"</span>
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@comp.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+<span class="kw">volumes</span>:
+  local_pgdata:
+  pgadmin-data:</code></pre>
+    </div>
+    <div>
+      <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.08em;">Taula clients (SQL per crear-la)</p>
+      <pre><code><span class="kw">CREATE TABLE</span> clients (
+  id       <span class="fn">SERIAL PRIMARY KEY</span>,
+  nom      <span class="fn">VARCHAR</span>(<span class="num">100</span>),
+  cognom   <span class="fn">VARCHAR</span>(<span class="num">100</span>),
+  adreca   <span class="fn">VARCHAR</span>(<span class="num">255</span>),
+  cp       <span class="fn">VARCHAR</span>(<span class="num">10</span>),
+  descripcio <span class="fn">TEXT</span>,
+  password <span class="fn">VARCHAR</span>(<span class="num">255</span>)
+);</code></pre>
+      <table class="db-table" style="margin-top:.5rem">
+        <thead>
+          <tr><th>Camp</th><th>Tipus</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>id</td><td>SERIAL</td><td><span class="tag tag-pk">PK</span></td></tr>
+          <tr><td>nom</td><td>VARCHAR</td><td></td></tr>
+          <tr><td>cognom</td><td>VARCHAR</td><td><span class="tag tag-upd">modificable</span></td></tr>
+          <tr><td>adreca</td><td>VARCHAR</td><td><span class="tag tag-upd">modificable</span></td></tr>
+          <tr><td>cp</td><td>VARCHAR</td><td><span class="tag tag-hide">no mostrar</span></td></tr>
+          <tr><td>descripcio</td><td>TEXT</td><td><span class="tag tag-hide">no mostrar</span></td></tr>
+          <tr><td>password</td><td>VARCHAR</td><td><span class="tag tag-hide">no mostrar</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Score overview ── -->
+  <div class="section-title">Puntuació total</div>
+  <div class="score-grid">
+    <div class="score-item s1"><span class="pct">10%</span><span class="label">Ex.1 · Connexió</span></div>
+    <div class="score-item s2"><span class="pct">20%</span><span class="label">Ex.2 · INSERT</span></div>
+    <div class="score-item s3"><span class="pct">20%</span><span class="label">Ex.3 · GET</span></div>
+    <div class="score-item s4"><span class="pct">15%</span><span class="label">Ex.4 · Schema</span></div>
+    <div class="score-item s5"><span class="pct">20%</span><span class="label">Ex.5 · UPDATE</span></div>
+    <div class="score-item s6"><span class="pct">10%</span><span class="label">Ex.6 · DELETE</span></div>
+    <div class="score-item s7"><span class="pct">5%</span><span class="label">Imports</span></div>
+    <div class="score-item s8"><span class="pct">−15</span><span class="label">Commits incorrectes</span></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- EXERCICI 1 -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section-title">Exercicis</div>
+
+  <div class="exercise">
+    <div class="exercise-header">
+      <div class="exercise-header-left">
+        <div class="ex-number ex-1">1</div>
+        <div>
+          <div class="ex-title">Connexió a la base de dades</div>
+          <div class="ex-subtitle">Crear el fitxer de connexió a PostgreSQL</div>
+        </div>
+      </div>
+      <div class="weight-badge w-10">10%</div>
+    </div>
+    <div class="exercise-body">
+      <p class="task-desc">
+        Crea la carpeta i el fitxer de connexió a la base de dades PostgreSQL seguint la configuració del docker-compose proporcionat.<br><br>
+        El fitxer ha de contenir una <strong>funció</strong> que estableixi la connexió i que retorni <em>únicament</em> l'objecte de connexió. Aquesta funció s'utilitzarà en tots els endpoints que necessitin accés a la BD.
+      </p>
+
+      <div class="alert alert-info" style="margin-bottom:.5rem">
+        <div class="alert-icon">💡</div>
+        <div>Paràmetres de connexió: <strong>host</strong> = <code>localhost</code>, <strong>database</strong> = <code>comp_DB</code>, <strong>user</strong> = <code>admin</code>, <strong>password</strong> = <code>admin</code>, <strong>port</strong> = <code>5432</code></div>
+      </div>
+
+      <div class="checklist">
+        <div class="checklist-title">Criteris d'avaluació</div>
+        <div class="check-group">
+          <div class="check-item">S'ha creat una carpeta específica per a la connexió (p.ex. <code>db_connect/</code>)</div>
+          <div class="check-item">Dintre de la carpeta hi ha el fitxer de connexió</div>
+          <div class="check-item">La connexió està encapsulada dins d'una funció</div>
+          <div class="check-item">La funció retorna únicament l'objecte de connexió</div>
+          <div class="check-item">Les credencials coincideixen amb el servei Docker del projecte</div>
+        </div>
+      </div>
+
+      <div class="commit-banner">
+        🔀 <strong>Commit + merge</strong> — Fes commit dels canvis d'aquest exercici i fusiona a <code>main</code> <em>abans</em> de passar a l'Exercici 2.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- EXERCICI 2 -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-header">
+      <div class="exercise-header-left">
+        <div class="ex-number ex-2">2</div>
+        <div>
+          <div class="ex-title">Inserció de nou client (POST)</div>
+          <div class="ex-subtitle">Crear endpoint + servei per afegir un registre a la taula</div>
+        </div>
+      </div>
+      <div class="weight-badge w-20">20%</div>
+    </div>
+    <div class="exercise-body">
+      <p class="task-desc">
+        El frontend envia un formulari de registre de client. Crea un <strong>endpoint POST</strong> que rebi les dades del formulari i les inserti a la taula <code>clients</code> de la BD.<br><br>
+        Les dades del formulari arriben com a <strong>paràmetres separats</strong> a la funció asíncrona (no com a objecte únic). L'endpoint ha de cridar un <strong>servei</strong> (arxiu dins d'una carpeta <code>services/</code>) que executi la query d'inserció.
+      </p>
+
+      <div class="form-preview">
+        <h4>Camps del formulari (paràmetres que arriben a l'endpoint)</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <div class="form-field">
+            <label>nom</label>
+            <div class="field-input">ex: "Anna"</div>
+            <div class="field-type">str</div>
+          </div>
+          <div class="form-field">
+            <label>cognom</label>
+            <div class="field-input">ex: "García"</div>
+            <div class="field-type">str</div>
+          </div>
+          <div class="form-field">
+            <label>adreca</label>
+            <div class="field-input">ex: "Carrer Major 12"</div>
+            <div class="field-type">str</div>
+          </div>
+          <div class="form-field">
+            <label>cp</label>
+            <div class="field-input">ex: "08001"</div>
+            <div class="field-type">str</div>
+          </div>
+          <div class="form-field">
+            <label>descripcio</label>
+            <div class="field-input">ex: "Client preferent"</div>
+            <div class="field-type">str</div>
+          </div>
+          <div class="form-field">
+            <label>password</label>
+            <div class="field-input">ex: "secret123"</div>
+            <div class="field-type">str</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="checklist">
+        <div class="checklist-title">Criteris d'avaluació</div>
+        <div class="check-group">
+          <div class="check-group-label">Endpoint</div>
+          <div class="check-item">S'utilitza el decorador HTTP correcte (<code>@app.post</code>)</div>
+          <div class="check-item">El path de l'endpoint és adequat per a una inserció</div>
+          <div class="check-item">S'especifica el <code>response_model</code> correcte</div>
+        </div>
+        <div class="check-group">
+          <div class="check-group-label">Funció asíncrona</div>
+          <div class="check-item">Es declara com a <code>async def</code></div>
+          <div class="check-item">Els paràmetres del formulari arriben <em>per separat</em> (un per camp)</div>
+          <div class="check-item">Es crida al servei adequat passant-li les dades per paràmetre</div>
+          <div class="check-item">Es retorna la informació adequada al client (confirmació de la inserció)</div>
+        </div>
+        <div class="check-group">
+          <div class="check-group-label">Servei</div>
+          <div class="check-item">Es crea la carpeta <code>services/</code></div>
+          <div class="check-item">S'implementa el servei amb la query INSERT adequada</div>
+          <div class="check-item">El return del servei és l'adequat per a una inserció</div>
+        </div>
+      </div>
+
+      <div class="commit-banner">
+        🔀 <strong>Commit + merge</strong> — Fes commit dels canvis d'aquest exercici i fusiona a <code>main</code> <em>abans</em> de passar a l'Exercici 3.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- EXERCICI 3 -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-header">
+      <div class="exercise-header-left">
+        <div class="ex-number ex-3">3</div>
+        <div>
+          <div class="ex-title">Consulta del perfil de client (GET)</div>
+          <div class="ex-subtitle">Retornar dades del client filtrant camps sensibles</div>
+        </div>
+      </div>
+      <div class="weight-badge w-20">20%</div>
+    </div>
+    <div class="exercise-body">
+      <p class="task-desc">
+        El frontend necessita mostrar la informació del perfil d'un client concret. Crea un <strong>endpoint GET</strong> que, donat l'identificador del client, retorni les seves dades.<br><br>
+        <strong>Important:</strong> la resposta <em>no ha d'incloure</em> els camps: <strong>password</strong>, <strong>descripcio</strong> ni <strong>cp</strong> (codi postal). Aquests camps mai han d'arribar al frontend.
+      </p>
+
+      <div class="alert alert-warning">
+        <div class="alert-icon">⚠️</div>
+        <div>El <code>response_model</code> d'un endpoint GET que retorna una llista ha de ser <strong><code>List[dict]</code></strong> o el tipus corresponent. No si retorna un únic element.</div>
+      </div>
+
+      <div class="checklist">
+        <div class="checklist-title">Criteris d'avaluació</div>
+        <div class="check-group">
+          <div class="check-group-label">Endpoint</div>
+          <div class="check-item">S'utilitza el decorador HTTP correcte (<code>@app.get</code>)</div>
+          <div class="check-item">El path és adequat i rep el paràmetre identificador si cal</div>
+          <div class="check-item">S'especifica el <code>response_model</code> correcte</div>
+        </div>
+        <div class="check-group">
+          <div class="check-group-label">Funció asíncrona</div>
+          <div class="check-item">Es passa la dada necessària per identificar el client</div>
+          <div class="check-item">Es crida al servei adequat</div>
+          <div class="check-item">Es retorna la resposta serialitzada (via schema, que es crea a l'Ex.4)</div>
+        </div>
+        <div class="check-group">
+          <div class="check-group-label">Servei</div>
+          <div class="check-item">La query SELECT obté les dades del client correctament</div>
+          <div class="check-item">El return passa les dades en brut (raw) al endpoint, que serà l'schema qui les filtra</div>
+        </div>
+      </div>
+
+      <div class="commit-banner">
+        🔀 <strong>Commit + merge</strong> — Fes commit dels canvis d'aquest exercici i fusiona a <code>main</code> <em>abans</em> de passar a l'Exercici 4.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- EXERCICI 4 -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-header">
+      <div class="exercise-header-left">
+        <div class="ex-number ex-4">4</div>
+        <div>
+          <div class="ex-title">Schema de serialització</div>
+          <div class="ex-subtitle">Transformar dades de la BD a format JSON per al frontend</div>
+        </div>
+      </div>
+      <div class="weight-badge w-15">15%</div>
+    </div>
+    <div class="exercise-body">
+      <p class="task-desc">
+        El projecte necessita una capa que transformi les files de qualsevol consulta de lectura (retornades per la BD com a tuples) en un format JSON que el frontend pugui interpretar.<br><br>
+        Crea un <strong>schema</strong> amb dues funcions:
+        <ul style="margin-top:.5rem;margin-left:1.2rem;font-size:.92rem">
+          <li>Una funció que mapeja <em>una sola fila</em> de la BD a un diccionari Python amb els camps adequats (excloent els camps sensibles: <strong>password</strong>, <strong>descripcio</strong>, <strong>cp</strong>)</li>
+          <li>Una funció que itera sobre la llista de files i crida la funció anterior per a cada element</li>
+        </ul>
+      </p>
+
+      <div class="alert alert-danger">
+        <div class="alert-icon">🚫</div>
+        <div><strong>Atenció crítica:</strong> Si el schema existeix però <em>no s'utilitza</em> als endpoints de lectura, <strong>no puntua</strong> (0 punts per l'exercici 4 sencer).</div>
+      </div>
+
+      <pre><code><span class="cm"># Exemple d'estructura esperada (schemas/client_schema.py)</span>
+
+<span class="kw">def</span> <span class="fn">client_schema</span>(client) -> <span class="fn">dict</span>:
+    <span class="kw">return</span> {
+        <span class="st">"id"</span>: client[<span class="num">0</span>],
+        <span class="st">"nom"</span>: client[<span class="num">1</span>],
+        <span class="st">"cognom"</span>: client[<span class="num">2</span>],
+        <span class="st">"adreca"</span>: client[<span class="num">3</span>],
+        <span class="cm"># cp, descripcio i password NO s'inclouen</span>
+    }
+
+<span class="kw">def</span> <span class="fn">clients_schema</span>(clients) -> <span class="fn">list</span>:
+    <span class="kw">return</span> [<span class="fn">client_schema</span>(client) <span class="kw">for</span> client <span class="kw">in</span> clients]</code></pre>
+
+      <div class="checklist">
+        <div class="checklist-title">Criteris d'avaluació</div>
+        <div class="check-group">
+          <div class="check-item">Es crea la carpeta <code>schemas/</code></div>
+          <div class="check-item">Es crea el fitxer de l'schema dins de la carpeta</div>
+          <div class="check-item">S'implementa la funció per mapejar <em>una sola fila</em> a diccionari (sense camps sensibles)</div>
+          <div class="check-item">S'implementa la funció per iterar una llista de files i aplicar la funció anterior</div>
+          <div class="check-item">L'schema s'utilitza correctament als endpoints que fan lectures (Ex.3, Ex.5...)</div>
+        </div>
+      </div>
+
+      <div class="commit-banner">
+        🔀 <strong>Commit + merge</strong> — Fes commit dels canvis d'aquest exercici i fusiona a <code>main</code> <em>abans</em> de passar a l'Exercici 5.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- EXERCICI 5 -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-header">
+      <div class="exercise-header-left">
+        <div class="ex-number ex-5">5</div>
+        <div>
+          <div class="ex-title">Modificació de dades del perfil (PUT)</div>
+          <div class="ex-subtitle">Actualitzar cognom i adreça d'un client</div>
+        </div>
+      </div>
+      <div class="weight-badge w-20">20%</div>
+    </div>
+    <div class="exercise-body">
+      <p class="task-desc">
+        El frontend permet als clients modificar parcialment el seu perfil. Crea un <strong>endpoint PUT</strong> que actualitzi <em>únicament</em> els camps <strong>cognom</strong> i <strong>adreca</strong> del client que fa la petició.<br><br>
+        El client s'identifica a través de les dades que arriben a la petició (no cal passar l'<code>id</code> pel path de la URL).
+      </p>
+
+      <div class="alert alert-warning">
+        <div class="alert-icon">⚠️</div>
+        <div>No cal passar l'<code>id</code> del client com a paràmetre de path (<code>/clients/{id}</code>). El client ja s'identifica per la sessió o per un altre camp que arriba a la funció.</div>
+      </div>
+
+      <div class="checklist">
+        <div class="checklist-title">Criteris d'avaluació</div>
+        <div class="check-group">
+          <div class="check-group-label">Endpoint</div>
+          <div class="check-item">S'utilitza el decorador HTTP correcte (<code>@app.put</code>)</div>
+          <div class="check-item">El path és adequat per a una actualització</div>
+          <div class="check-item">S'especifica el <code>response_model</code> correcte</div>
+        </div>
+        <div class="check-group">
+          <div class="check-group-label">Funció asíncrona</div>
+          <div class="check-item">Es passen per paràmetre les dades necessàries (cognom nou, adreça nova + identificador)</div>
+          <div class="check-item">Es crida al servei adequat amb les dades correctes</div>
+          <div class="check-item">Es retorna la resposta adequada (confirmació o dades actualitzades)</div>
+        </div>
+        <div class="check-group">
+          <div class="check-group-label">Servei</div>
+          <div class="check-item">La query UPDATE modifica <em>només</em> els camps cognom i adreça</div>
+          <div class="check-item">El return és l'adequat per a una actualització (no retorna valors booleants directament)</div>
+        </div>
+      </div>
+
+      <div class="commit-banner">
+        🔀 <strong>Commit + merge</strong> — Fes commit dels canvis d'aquest exercici i fusiona a <code>main</code> <em>abans</em> de passar a l'Exercici 6.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- EXERCICI 6 -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-header">
+      <div class="exercise-header-left">
+        <div class="ex-number ex-6">6</div>
+        <div>
+          <div class="ex-title">Eliminació del perfil (DELETE)</div>
+          <div class="ex-subtitle">Esborrar el registre del client de la BD</div>
+        </div>
+      </div>
+      <div class="weight-badge w-10">10%</div>
+    </div>
+    <div class="exercise-body">
+      <p class="task-desc">
+        El frontend permet eliminar el compte del client. Crea un <strong>endpoint DELETE</strong> que esborri el registre del client actual de la taula <code>clients</code>.<br><br>
+        El return de l'endpoint ha de ser un <strong>diccionari</strong> (mai un booleà directament). La resposta JSON ja ve serialitzada des del servei: no cal transformar-la al return de l'endpoint.
+      </p>
+
+      <div class="alert alert-danger">
+        <div class="alert-icon">🚫</div>
+        <div>El servei <strong>no ha de retornar un booleà</strong>. L'endpoint <strong>tampoc</strong>. Retorna sempre un diccionari com ara <code>{"deleted": True}</code> o les dades del registre eliminat.</div>
+      </div>
+
+      <div class="checklist">
+        <div class="checklist-title">Criteris d'avaluació</div>
+        <div class="check-group">
+          <div class="check-group-label">Endpoint</div>
+          <div class="check-item">S'utilitza el decorador HTTP correcte (<code>@app.delete</code>)</div>
+          <div class="check-item">El path és adequat per a una eliminació</div>
+          <div class="check-item">S'especifica el <code>response_model</code> correcte</div>
+        </div>
+        <div class="check-group">
+          <div class="check-group-label">Funció asíncrona</div>
+          <div class="check-item">Es passa la dada necessària per identificar el client a eliminar</div>
+          <div class="check-item">Es crida al servei adequat</div>
+          <div class="check-item">El return de l'endpoint és la resposta del servei (sense transformar-la de nou)</div>
+        </div>
+        <div class="check-group">
+          <div class="check-group-label">Servei</div>
+          <div class="check-item">La query DELETE elimina el registre correctament</div>
+          <div class="check-item">El servei retorna un diccionari (p.ex. <code>{"deleted": True}</code>), mai un booleà sol</div>
+        </div>
+      </div>
+
+      <div class="commit-banner">
+        🔀 <strong>Commit + merge</strong> — Fes commit dels canvis d'aquest exercici i fusiona a <code>main</code> un cop acabat.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Imports ── -->
+  <div class="exercise">
+    <div class="exercise-header">
+      <div class="exercise-header-left">
+        <div class="ex-number ex-1" style="width:auto;border-radius:8px;padding:.2rem .7rem;font-size:.8rem">+</div>
+        <div>
+          <div class="ex-title">Imports (5%)</div>
+          <div class="ex-subtitle">Organització correcta dels imports al projecte</div>
+        </div>
+      </div>
+      <div class="weight-badge w-10">5%</div>
+    </div>
+    <div class="exercise-body">
+      <div class="checklist">
+        <div class="checklist-title">Criteris d'avaluació</div>
+        <div class="check-item">L'objecte connexió s'utilitza (s'importa i s'usa) a tots els endpoints que accedeixen a la BD</div>
+        <div class="check-item">Els imports de la funció de connexió estan al fitxer correcte</div>
+        <div class="check-item">Els imports dels serveis estan ben declarats (paths correctes)</div>
+        <div class="check-item">Els imports de l'schema estan ben declarats i s'usa l'schema en els endpoints de lectura</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <div style="margin-top:2.5rem;padding:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:.82rem;color:var(--text-muted);text-align:center;">
+    <strong style="color:var(--text)">M07 · UF2 · Examen de Recuperació</strong><br>
+    DAW2A · COMPLECIÓ · Curs 2025–2026
+  </div>
+
+</div>
+</body>
+</html>
